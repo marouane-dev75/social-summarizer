@@ -3,8 +3,8 @@
 import sys
 from typing import List, Optional
 from .command_pattern import CommandInvoker, CommandRegistry
-from ...core.logging import get_logger
-from ...config.manager import get_app_config
+from src.time_reclamation.core import get_logger
+from src.time_reclamation.config import get_app_config
 
 
 class CLIManager:

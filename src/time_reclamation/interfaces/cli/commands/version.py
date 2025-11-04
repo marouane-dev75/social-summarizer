@@ -2,7 +2,7 @@
 
 from typing import List
 from .base import BaseCommand
-from ....config.manager import get_app_config
+from src.time_reclamation.config import get_app_config
 
 
 class VersionCommand(BaseCommand):
