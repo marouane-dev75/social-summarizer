@@ -21,6 +21,11 @@ platforms:
   twitter:
     enabled: true
 
+# Database configuration
+database:
+  path: "cache_data/state.db"
+  auto_create: true
+
 # Notification settings (for future use)
 notifications:
   telegram:

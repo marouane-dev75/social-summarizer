@@ -8,12 +8,25 @@ from pathlib import Path
 
 
 @dataclass
+class DatabaseConfig:
+    """Database configuration data class."""
+    path: str = "cache_data/state.db"
+    auto_create: bool = True
+
+
+@dataclass
 class AppConfig:
     """Application configuration data class."""
     name: str = "Time Reclamation App"
     version: str = "1.0.0"
     description: str = "Reclaim time wasted on social media by getting curated summaries instead of endless scrolling"
     author: str = "Time Reclamation Team"
+    database: DatabaseConfig = None
+    
+    def __post_init__(self):
+        """Initialize nested configurations."""
+        if self.database is None:
+            self.database = DatabaseConfig()
 
 
 class ConfigManager:
@@ -62,11 +75,19 @@ class ConfigManager:
                 # Extract app-specific configuration
                 app_data = config_data.get('app', {})
                 
+                # Extract database configuration
+                db_data = config_data.get('database', {})
+                database_config = DatabaseConfig(
+                    path=db_data.get('path', DatabaseConfig.path),
+                    auto_create=db_data.get('auto_create', DatabaseConfig.auto_create)
+                )
+                
                 return AppConfig(
                     name=app_data.get('name', AppConfig.name),
                     version=app_data.get('version', AppConfig.version),
                     description=app_data.get('description', AppConfig.description),
-                    author=app_data.get('author', AppConfig.author)
+                    author=app_data.get('author', AppConfig.author),
+                    database=database_config
                 )
             except Exception:
                 # If loading fails, return defaults

@@ -3,6 +3,7 @@
 from typing import Dict, List, Optional
 from .commands.base import BaseCommand
 from .commands.version import VersionCommand
+from .commands.db_info import DbInfoCommand
 from src.time_reclamation.core import get_logger
 
 
@@ -21,6 +22,7 @@ class CommandRegistry:
     def _register_default_commands(self) -> None:
         """Register the default set of commands."""
         self.register_command(VersionCommand())
+        self.register_command(DbInfoCommand())
     
     def register_command(self, command: BaseCommand) -> None:
         """
