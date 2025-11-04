@@ -1,0 +1,4 @@
+# Time Reclamation App Dependencies
+
+# Configuration management
+PyYAML>=6.0

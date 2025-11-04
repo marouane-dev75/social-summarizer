@@ -1,0 +1,27 @@
+# Time Reclamation App Configuration
+
+app:
+  name: "Time Reclamation App"
+  version: "1.0.0"
+  description: "Reclaim time wasted on social media by getting curated summaries instead of endless scrolling"
+  author: "Time Reclamation Team"
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  console_colors: true
+
+# Platform configurations (for future use)
+platforms:
+  youtube:
+    enabled: true
+  reddit:
+    enabled: true
+  twitter:
+    enabled: true
+
+# Notification settings (for future use)
+notifications:
+  telegram:
+    enabled: false
