@@ -5,3 +5,6 @@ PyYAML>=6.0
 
 # HTTP requests for notifications
 requests>=2.31.0
+
+# YouTube transcript scraping
+yt-dlp>=2025.10.22

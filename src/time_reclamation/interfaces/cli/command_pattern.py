@@ -5,6 +5,7 @@ from .commands.base import BaseCommand
 from .commands.version import VersionCommand
 from .commands.db_info import DbInfoCommand
 from .commands.notify_test import NotifyTestCommand
+from .commands.youtube import YouTubeCommand
 from src.time_reclamation.infrastructure import get_logger
 
 
@@ -25,6 +26,7 @@ class CommandRegistry:
         self.register_command(VersionCommand())
         self.register_command(DbInfoCommand())
         self.register_command(NotifyTestCommand())
+        self.register_command(YouTubeCommand())
     
     def register_command(self, command: BaseCommand) -> None:
         """

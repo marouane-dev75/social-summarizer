@@ -25,6 +25,46 @@ class TelegramConfig:
 
 
 @dataclass
+class YouTubeChannelConfig:
+    """YouTube channel configuration data class."""
+    name: str = ""
+    scrap: bool = False
+    url: str = ""
+    max_videos: int = 10
+    language: str = "en"
+    cache_folder: str = "cache_data/youtube_transcripts/default"
+
+
+@dataclass
+class YouTubePlatformConfig:
+    """YouTube platform configuration data class."""
+    enabled: bool = True
+    channels: list = None
+    
+    def __post_init__(self):
+        """Initialize channels list."""
+        if self.channels is None:
+            self.channels = []
+
+
+@dataclass
+class PlatformsConfig:
+    """Platforms configuration data class."""
+    youtube: YouTubePlatformConfig = None
+    reddit: dict = None
+    twitter: dict = None
+    
+    def __post_init__(self):
+        """Initialize platform configurations."""
+        if self.youtube is None:
+            self.youtube = YouTubePlatformConfig()
+        if self.reddit is None:
+            self.reddit = {"enabled": True}
+        if self.twitter is None:
+            self.twitter = {"enabled": True}
+
+
+@dataclass
 class NotificationConfig:
     """Notification configuration data class."""
     telegram: TelegramConfig = None
@@ -44,6 +84,7 @@ class AppConfig:
     author: str = "Time Reclamation Team"
     database: DatabaseConfig = None
     notifications: NotificationConfig = None
+    platforms: PlatformsConfig = None
     
     def __post_init__(self):
         """Initialize nested configurations."""
@@ -51,6 +92,8 @@ class AppConfig:
             self.database = DatabaseConfig()
         if self.notifications is None:
             self.notifications = NotificationConfig()
+        if self.platforms is None:
+            self.platforms = PlatformsConfig()
 
 
 class ConfigManager:
@@ -128,13 +171,36 @@ class ConfigManager:
         )
         notification_config = NotificationConfig(telegram=telegram_config)
         
+        # Extract platforms configuration
+        platforms_data = merged_config.get('platforms', {})
+        
+        # Extract YouTube configuration
+        youtube_data = platforms_data.get('youtube', {})
+        youtube_channels = []
+        
+        for channel_data in youtube_data.get('channels', []):
+            if isinstance(channel_data, dict):
+                youtube_channels.append(channel_data)
+        
+        youtube_config = YouTubePlatformConfig(
+            enabled=youtube_data.get('enabled', True),
+            channels=youtube_channels
+        )
+        
+        platforms_config = PlatformsConfig(
+            youtube=youtube_config,
+            reddit=platforms_data.get('reddit', {"enabled": True}),
+            twitter=platforms_data.get('twitter', {"enabled": True})
+        )
+        
         return AppConfig(
             name=app_data.get('name', AppConfig.name),
             version=app_data.get('version', AppConfig.version),
             description=app_data.get('description', AppConfig.description),
             author=app_data.get('author', AppConfig.author),
             database=database_config,
-            notifications=notification_config
+            notifications=notification_config,
+            platforms=platforms_config
         )
     
     def _load_yaml_file(self, file_path: str) -> Dict[str, Any]:

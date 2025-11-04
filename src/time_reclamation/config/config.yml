@@ -12,10 +12,24 @@ logging:
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   console_colors: true
 
-# Platform configurations (for future use)
+# Platform configurations
 platforms:
   youtube:
     enabled: true
+    channels:
+      - name: "TechWizard9000"
+        scrap: true
+        url: "https://www.youtube.com/@TechWizard9000"
+        max_videos: 10
+        language: "fr"
+        cache_folder: "cache_data/youtube_transcripts/TechWizard9000"
+      # Add more channels as needed
+      # - name: "Another Channel"
+      #   scrap: true
+      #   url: "https://www.youtube.com/@anotherchannel"
+      #   max_videos: 5
+      #   language: "en"
+      #   cache_folder: "cache_data/youtube_transcripts/another_channel"
   reddit:
     enabled: true
   twitter:
