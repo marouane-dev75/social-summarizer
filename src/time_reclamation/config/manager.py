@@ -1,7 +1,7 @@
 """Configuration manager for Time Reclamation App."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Dict, Any
 import os
 import yaml
 from pathlib import Path
@@ -64,6 +64,7 @@ class ConfigManager:
             config_path: Path to configuration file (optional)
         """
         self.config_path = config_path or self._get_default_config_path()
+        self.local_config_path = self._get_local_config_path()
         self._config: Optional[AppConfig] = None
     
     def _get_default_config_path(self) -> str:
@@ -71,6 +72,11 @@ class ConfigManager:
         # Look for config.yml in the config directory
         config_dir = Path(__file__).parent
         return str(config_dir / "config.yml")
+    
+    def _get_local_config_path(self) -> str:
+        """Get the local configuration file path for sensitive overrides."""
+        config_dir = Path(__file__).parent
+        return str(config_dir / "config.local.yml")
     
     def get_config(self) -> AppConfig:
         """
@@ -86,52 +92,100 @@ class ConfigManager:
     def _load_config(self) -> AppConfig:
         """
         Load configuration from file or return defaults.
+        Merges main config with local overrides if available.
         
         Returns:
             AppConfig instance
         """
-        # Try to load from file if it exists
-        if os.path.exists(self.config_path):
-            try:
-                with open(self.config_path, 'r', encoding='utf-8') as f:
-                    config_data = yaml.safe_load(f) or {}
-                
-                # Extract app-specific configuration
-                app_data = config_data.get('app', {})
-                
-                # Extract database configuration
-                db_data = config_data.get('database', {})
-                database_config = DatabaseConfig(
-                    path=db_data.get('path', DatabaseConfig.path),
-                    auto_create=db_data.get('auto_create', DatabaseConfig.auto_create)
-                )
-                
-                # Extract notification configuration
-                notifications_data = config_data.get('notifications', {})
-                telegram_data = notifications_data.get('telegram', {})
-                telegram_config = TelegramConfig(
-                    enabled=telegram_data.get('enabled', TelegramConfig.enabled),
-                    bot_token=telegram_data.get('bot_token', TelegramConfig.bot_token),
-                    chat_id=telegram_data.get('chat_id', TelegramConfig.chat_id),
-                    timeout_seconds=telegram_data.get('timeout_seconds', TelegramConfig.timeout_seconds),
-                    retry_attempts=telegram_data.get('retry_attempts', TelegramConfig.retry_attempts)
-                )
-                notification_config = NotificationConfig(telegram=telegram_config)
-                
-                return AppConfig(
-                    name=app_data.get('name', AppConfig.name),
-                    version=app_data.get('version', AppConfig.version),
-                    description=app_data.get('description', AppConfig.description),
-                    author=app_data.get('author', AppConfig.author),
-                    database=database_config,
-                    notifications=notification_config
-                )
-            except Exception:
-                # If loading fails, return defaults
-                pass
+        # Load main configuration
+        config_data = self._load_yaml_file(self.config_path)
         
-        # Return default configuration
-        return AppConfig()
+        # Load local overrides if they exist
+        local_config_data = self._load_yaml_file(self.local_config_path)
+        
+        # Merge configurations (local overrides main)
+        merged_config = self._merge_configs(config_data, local_config_data)
+        
+        # Extract app-specific configuration
+        app_data = merged_config.get('app', {})
+        
+        # Extract database configuration
+        db_data = merged_config.get('database', {})
+        database_config = DatabaseConfig(
+            path=db_data.get('path', DatabaseConfig.path),
+            auto_create=db_data.get('auto_create', DatabaseConfig.auto_create)
+        )
+        
+        # Extract notification configuration
+        notifications_data = merged_config.get('notifications', {})
+        telegram_data = notifications_data.get('telegram', {})
+        telegram_config = TelegramConfig(
+            enabled=telegram_data.get('enabled', TelegramConfig.enabled),
+            bot_token=telegram_data.get('bot_token', TelegramConfig.bot_token),
+            chat_id=telegram_data.get('chat_id', TelegramConfig.chat_id),
+            timeout_seconds=telegram_data.get('timeout_seconds', TelegramConfig.timeout_seconds),
+            retry_attempts=telegram_data.get('retry_attempts', TelegramConfig.retry_attempts)
+        )
+        notification_config = NotificationConfig(telegram=telegram_config)
+        
+        return AppConfig(
+            name=app_data.get('name', AppConfig.name),
+            version=app_data.get('version', AppConfig.version),
+            description=app_data.get('description', AppConfig.description),
+            author=app_data.get('author', AppConfig.author),
+            database=database_config,
+            notifications=notification_config
+        )
+    
+    def _load_yaml_file(self, file_path: str) -> Dict[str, Any]:
+        """
+        Load YAML configuration from a file.
+        
+        Args:
+            file_path: Path to the YAML file
+            
+        Returns:
+            Dictionary with configuration data, empty dict if file doesn't exist or fails to load
+        """
+        if not os.path.exists(file_path):
+            return {}
+            
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                return yaml.safe_load(f) or {}
+        except Exception:
+            # If loading fails, return empty dict
+            return {}
+    
+    def _merge_configs(self, base_config: Dict[str, Any], override_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Recursively merge two configuration dictionaries.
+        Values in override_config take precedence over base_config.
+        
+        Args:
+            base_config: Base configuration dictionary
+            override_config: Override configuration dictionary
+            
+        Returns:
+            Merged configuration dictionary
+        """
+        if not override_config:
+            return base_config.copy()
+            
+        if not base_config:
+            return override_config.copy()
+            
+        merged = base_config.copy()
+        
+        for key, value in override_config.items():
+            if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
+                # Recursively merge nested dictionaries
+                merged[key] = self._merge_configs(merged[key], value)
+            else:
+                # Override the value
+                merged[key] = value
+                
+        return merged
     
     def reload_config(self) -> AppConfig:
         """
