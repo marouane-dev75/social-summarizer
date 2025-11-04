@@ -2,3 +2,6 @@
 
 # Configuration management
 PyYAML>=6.0
+
+# HTTP requests for notifications
+requests>=2.31.0

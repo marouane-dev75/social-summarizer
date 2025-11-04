@@ -15,6 +15,27 @@ class DatabaseConfig:
 
 
 @dataclass
+class TelegramConfig:
+    """Telegram notification configuration data class."""
+    enabled: bool = False
+    bot_token: str = "YOUR_BOT_TOKEN_HERE"
+    chat_id: str = "YOUR_CHAT_ID_HERE"
+    timeout_seconds: int = 30
+    retry_attempts: int = 3
+
+
+@dataclass
+class NotificationConfig:
+    """Notification configuration data class."""
+    telegram: TelegramConfig = None
+    
+    def __post_init__(self):
+        """Initialize nested configurations."""
+        if self.telegram is None:
+            self.telegram = TelegramConfig()
+
+
+@dataclass
 class AppConfig:
     """Application configuration data class."""
     name: str = "Time Reclamation App"
@@ -22,11 +43,14 @@ class AppConfig:
     description: str = "Reclaim time wasted on social media by getting curated summaries instead of endless scrolling"
     author: str = "Time Reclamation Team"
     database: DatabaseConfig = None
+    notifications: NotificationConfig = None
     
     def __post_init__(self):
         """Initialize nested configurations."""
         if self.database is None:
             self.database = DatabaseConfig()
+        if self.notifications is None:
+            self.notifications = NotificationConfig()
 
 
 class ConfigManager:
@@ -82,12 +106,25 @@ class ConfigManager:
                     auto_create=db_data.get('auto_create', DatabaseConfig.auto_create)
                 )
                 
+                # Extract notification configuration
+                notifications_data = config_data.get('notifications', {})
+                telegram_data = notifications_data.get('telegram', {})
+                telegram_config = TelegramConfig(
+                    enabled=telegram_data.get('enabled', TelegramConfig.enabled),
+                    bot_token=telegram_data.get('bot_token', TelegramConfig.bot_token),
+                    chat_id=telegram_data.get('chat_id', TelegramConfig.chat_id),
+                    timeout_seconds=telegram_data.get('timeout_seconds', TelegramConfig.timeout_seconds),
+                    retry_attempts=telegram_data.get('retry_attempts', TelegramConfig.retry_attempts)
+                )
+                notification_config = NotificationConfig(telegram=telegram_config)
+                
                 return AppConfig(
                     name=app_data.get('name', AppConfig.name),
                     version=app_data.get('version', AppConfig.version),
                     description=app_data.get('description', AppConfig.description),
                     author=app_data.get('author', AppConfig.author),
-                    database=database_config
+                    database=database_config,
+                    notifications=notification_config
                 )
             except Exception:
                 # If loading fails, return defaults
@@ -105,6 +142,15 @@ class ConfigManager:
         """
         self._config = None
         return self.get_config()
+    
+    def get_telegram_config(self) -> TelegramConfig:
+        """
+        Get Telegram notification configuration.
+        
+        Returns:
+            TelegramConfig instance
+        """
+        return self.get_config().notifications.telegram
 
 
 # Global configuration manager instance
