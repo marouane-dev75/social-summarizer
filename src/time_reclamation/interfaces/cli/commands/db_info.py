@@ -2,7 +2,7 @@
 
 from typing import List
 from .base import BaseCommand
-from src.time_reclamation.core.database import get_database_manager
+from src.time_reclamation.infrastructure.database import get_database_manager
 
 
 class DbInfoCommand(BaseCommand):

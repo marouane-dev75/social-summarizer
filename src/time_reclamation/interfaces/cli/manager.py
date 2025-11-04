@@ -3,7 +3,7 @@
 import sys
 from typing import List, Optional
 from .command_pattern import CommandInvoker, CommandRegistry
-from src.time_reclamation.core import get_logger
+from src.time_reclamation.infrastructure import get_logger
 from src.time_reclamation.config import get_app_config
 
 

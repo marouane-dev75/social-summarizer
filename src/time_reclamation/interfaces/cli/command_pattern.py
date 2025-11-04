@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 from .commands.base import BaseCommand
 from .commands.version import VersionCommand
 from .commands.db_info import DbInfoCommand
-from src.time_reclamation.core import get_logger
+from src.time_reclamation.infrastructure import get_logger
 
 
 class CommandRegistry:

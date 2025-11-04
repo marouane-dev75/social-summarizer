@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 from contextlib import contextmanager
 from src.time_reclamation.config import get_app_config
-from src.time_reclamation.core import get_logger
+from src.time_reclamation.infrastructure import get_logger
 
 
 class DatabaseManager:

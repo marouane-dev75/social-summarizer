@@ -170,7 +170,7 @@ def get_logger(name: str = "TimeReclamation") -> ConsoleLogger:
         _logger = ConsoleLogger(name)
         # Set logging level from configuration
         try:
-            from src.time_reclamation.core import get_config_manager
+            from src.time_reclamation.infrastructure import get_config_manager
             config_manager = get_config_manager()
             
             # Try to load logging config from YAML if available

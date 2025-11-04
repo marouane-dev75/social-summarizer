@@ -3,7 +3,7 @@
 import traceback
 from abc import ABC, abstractmethod
 from typing import List
-from src.time_reclamation.core import get_logger
+from src.time_reclamation.infrastructure import get_logger
 
 
 class BaseCommand(ABC):
