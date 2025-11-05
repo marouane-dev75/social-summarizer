@@ -22,36 +22,29 @@ class TelegramProvider(NotificationProvider):
     
     BASE_URL = "https://api.telegram.org/bot"
     
-    def __init__(self, bot_token: Optional[str] = None, chat_id: Optional[str] = None, 
-                 timeout: Optional[int] = None, retry_attempts: Optional[int] = None):
+    def __init__(self, instance_name: str, config: Dict[str, Any]):
         """
-        Initialize the Telegram provider.
+        Initialize the Telegram provider with instance-specific configuration.
         
         Args:
-            bot_token: Telegram bot token (optional, will use config if not provided)
-            chat_id: Chat ID to send messages to (optional, will use config if not provided)
-            timeout: Request timeout in seconds (optional, will use config if not provided)
-            retry_attempts: Number of retry attempts (optional, will use config if not provided)
+            instance_name: Name of this provider instance
+            config: Configuration dictionary for this instance
         """
         self.logger = get_logger()
+        self.instance_name = instance_name
         
-        # Load configuration
-        config_manager = get_config_manager()
-        telegram_config = config_manager.get_telegram_config()
+        # Extract configuration values
+        self.bot_token = config.get('bot_token', 'YOUR_BOT_TOKEN_HERE')
+        self.chat_id = config.get('chat_id', 'YOUR_CHAT_ID_HERE')
+        self.timeout = config.get('timeout_seconds', 30)
+        self.retry_attempts = config.get('retry_attempts', 3)
         
-        # Use provided values or fall back to config
-        self.bot_token = bot_token or telegram_config.bot_token
-        self.chat_id = chat_id or telegram_config.chat_id
-        self.timeout = timeout or telegram_config.timeout_seconds
-        self.retry_attempts = retry_attempts or telegram_config.retry_attempts
-        self.enabled = telegram_config.enabled
-        
-        self.logger.debug(f"Telegram provider initialized with timeout={self.timeout}, retries={self.retry_attempts}")
+        self.logger.debug(f"Telegram provider '{instance_name}' initialized with timeout={self.timeout}, retries={self.retry_attempts}")
     
     @property
     def provider_name(self) -> str:
         """Get the provider name."""
-        return "Telegram"
+        return f"Telegram ({self.instance_name})"
     
     def is_configured(self) -> bool:
         """
@@ -60,9 +53,6 @@ class TelegramProvider(NotificationProvider):
         Returns:
             bool: True if the provider is ready to send notifications
         """
-        if not self.enabled:
-            return False
-            
         if not self.bot_token or self.bot_token == "YOUR_BOT_TOKEN_HERE":
             return False
             

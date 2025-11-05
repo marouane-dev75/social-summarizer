@@ -1,7 +1,7 @@
 """Configuration manager for Time Reclamation App."""
 
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import os
 import yaml
 from pathlib import Path
@@ -15,13 +15,17 @@ class DatabaseConfig:
 
 
 @dataclass
-class TelegramConfig:
-    """Telegram notification configuration data class."""
-    enabled: bool = False
-    bot_token: str = "YOUR_BOT_TOKEN_HERE"
-    chat_id: str = "YOUR_CHAT_ID_HERE"
-    timeout_seconds: int = 30
-    retry_attempts: int = 3
+class ProviderInstanceConfig:
+    """Provider instance configuration data class."""
+    name: str = ""
+    type: str = ""
+    enabled: bool = True
+    config: Dict[str, Any] = None
+    
+    def __post_init__(self):
+        """Initialize config dictionary."""
+        if self.config is None:
+            self.config = {}
 
 
 @dataclass
@@ -67,12 +71,12 @@ class PlatformsConfig:
 @dataclass
 class NotificationConfig:
     """Notification configuration data class."""
-    telegram: TelegramConfig = None
+    providers: List[ProviderInstanceConfig] = None
     
     def __post_init__(self):
-        """Initialize nested configurations."""
-        if self.telegram is None:
-            self.telegram = TelegramConfig()
+        """Initialize providers list."""
+        if self.providers is None:
+            self.providers = []
 
 
 @dataclass
@@ -161,15 +165,32 @@ class ConfigManager:
         
         # Extract notification configuration
         notifications_data = merged_config.get('notifications', {})
-        telegram_data = notifications_data.get('telegram', {})
-        telegram_config = TelegramConfig(
-            enabled=telegram_data.get('enabled', TelegramConfig.enabled),
-            bot_token=telegram_data.get('bot_token', TelegramConfig.bot_token),
-            chat_id=telegram_data.get('chat_id', TelegramConfig.chat_id),
-            timeout_seconds=telegram_data.get('timeout_seconds', TelegramConfig.timeout_seconds),
-            retry_attempts=telegram_data.get('retry_attempts', TelegramConfig.retry_attempts)
-        )
-        notification_config = NotificationConfig(telegram=telegram_config)
+        providers_data = notifications_data.get('providers', [])
+        
+        provider_instances = []
+        instance_names = set()
+        
+        for provider_data in providers_data:
+            if isinstance(provider_data, dict):
+                instance_config = ProviderInstanceConfig(
+                    name=provider_data.get('name', ''),
+                    type=provider_data.get('type', ''),
+                    enabled=provider_data.get('enabled', True),
+                    config=provider_data.get('config', {})
+                )
+                
+                # Validate instance configuration
+                validation_errors = self._validate_provider_instance(instance_config, instance_names)
+                if validation_errors:
+                    # Log validation errors but continue loading other instances
+                    for error in validation_errors:
+                        print(f"Configuration validation error: {error}")
+                    continue
+                
+                instance_names.add(instance_config.name)
+                provider_instances.append(instance_config)
+        
+        notification_config = NotificationConfig(providers=provider_instances)
         
         # Extract platforms configuration
         platforms_data = merged_config.get('platforms', {})
@@ -263,14 +284,103 @@ class ConfigManager:
         self._config = None
         return self.get_config()
     
-    def get_telegram_config(self) -> TelegramConfig:
+    def get_provider_instances(self) -> List[ProviderInstanceConfig]:
         """
-        Get Telegram notification configuration.
+        Get all provider instances configuration.
         
         Returns:
-            TelegramConfig instance
+            List of ProviderInstanceConfig instances
         """
-        return self.get_config().notifications.telegram
+        return self.get_config().notifications.providers
+    
+    def get_provider_instance(self, name: str) -> Optional[ProviderInstanceConfig]:
+        """
+        Get a specific provider instance by name.
+        
+        Args:
+            name: Name of the provider instance
+            
+        Returns:
+            ProviderInstanceConfig instance or None if not found
+        """
+        for provider in self.get_provider_instances():
+            if provider.name == name:
+                return provider
+        return None
+    
+    def _validate_provider_instance(self, instance: ProviderInstanceConfig, existing_names: set) -> List[str]:
+        """
+        Validate a provider instance configuration.
+        
+        Args:
+            instance: Provider instance configuration to validate
+            existing_names: Set of already processed instance names
+            
+        Returns:
+            List of validation error messages (empty if valid)
+        """
+        errors = []
+        
+        # Validate instance name
+        if not instance.name or not instance.name.strip():
+            errors.append("Provider instance name cannot be empty")
+        elif instance.name in existing_names:
+            errors.append(f"Duplicate provider instance name: '{instance.name}'")
+        elif not instance.name.replace('_', '').replace('-', '').isalnum():
+            errors.append(f"Provider instance name '{instance.name}' contains invalid characters. Use only letters, numbers, hyphens, and underscores")
+        
+        # Validate provider type
+        if not instance.type or not instance.type.strip():
+            errors.append(f"Provider instance '{instance.name}' must specify a type")
+        elif instance.type.lower() not in ['telegram']:  # Add more types as they're implemented
+            errors.append(f"Unknown provider type '{instance.type}' for instance '{instance.name}'. Supported types: telegram")
+        
+        # Validate type-specific configuration
+        if instance.type.lower() == 'telegram' and instance.enabled:
+            telegram_errors = self._validate_telegram_config(instance.name, instance.config)
+            errors.extend(telegram_errors)
+        
+        return errors
+    
+    def _validate_telegram_config(self, instance_name: str, config: Dict[str, Any]) -> List[str]:
+        """
+        Validate Telegram-specific configuration.
+        
+        Args:
+            instance_name: Name of the instance being validated
+            config: Telegram configuration dictionary
+            
+        Returns:
+            List of validation error messages (empty if valid)
+        """
+        errors = []
+        
+        # Check required fields
+        bot_token = config.get('bot_token', '')
+        chat_id = config.get('chat_id', '')
+        
+        if not bot_token or bot_token == 'YOUR_BOT_TOKEN_HERE' or bot_token == 'YOUR_WORK_BOT_TOKEN_HERE' or bot_token == 'YOUR_PERSONAL_BOT_TOKEN_HERE':
+            errors.append(f"Telegram instance '{instance_name}' requires a valid bot_token")
+        
+        if not chat_id or chat_id == 'YOUR_CHAT_ID_HERE' or chat_id == 'YOUR_WORK_CHAT_ID_HERE' or chat_id == 'YOUR_PERSONAL_CHAT_ID_HERE':
+            errors.append(f"Telegram instance '{instance_name}' requires a valid chat_id")
+        
+        # Validate bot token format (basic check)
+        if bot_token and bot_token not in ['YOUR_BOT_TOKEN_HERE', 'YOUR_WORK_BOT_TOKEN_HERE', 'YOUR_PERSONAL_BOT_TOKEN_HERE']:
+            parts = bot_token.split(':')
+            if len(parts) != 2 or not parts[0].isdigit() or len(parts[1]) < 10:
+                errors.append(f"Telegram instance '{instance_name}' has invalid bot_token format")
+        
+        # Validate numeric settings
+        timeout = config.get('timeout_seconds', 30)
+        if not isinstance(timeout, int) or timeout <= 0:
+            errors.append(f"Telegram instance '{instance_name}' timeout_seconds must be a positive integer")
+        
+        retry_attempts = config.get('retry_attempts', 3)
+        if not isinstance(retry_attempts, int) or retry_attempts < 0:
+            errors.append(f"Telegram instance '{instance_name}' retry_attempts must be a non-negative integer")
+        
+        return errors
 
 
 # Global configuration manager instance
