@@ -80,6 +80,17 @@ class NotificationConfig:
 
 
 @dataclass
+class LLMConfig:
+    """LLM configuration data class."""
+    providers: List[ProviderInstanceConfig] = None
+    
+    def __post_init__(self):
+        """Initialize providers list."""
+        if self.providers is None:
+            self.providers = []
+
+
+@dataclass
 class AppConfig:
     """Application configuration data class."""
     name: str = "Time Reclamation App"
@@ -88,6 +99,7 @@ class AppConfig:
     author: str = "Time Reclamation Team"
     database: DatabaseConfig = None
     notifications: NotificationConfig = None
+    llm: LLMConfig = None
     platforms: PlatformsConfig = None
     
     def __post_init__(self):
@@ -96,6 +108,8 @@ class AppConfig:
             self.database = DatabaseConfig()
         if self.notifications is None:
             self.notifications = NotificationConfig()
+        if self.llm is None:
+            self.llm = LLMConfig()
         if self.platforms is None:
             self.platforms = PlatformsConfig()
 
@@ -192,6 +206,35 @@ class ConfigManager:
         
         notification_config = NotificationConfig(providers=provider_instances)
         
+        # Extract LLM configuration
+        llm_data = merged_config.get('llm', {})
+        llm_providers_data = llm_data.get('providers', [])
+        
+        llm_provider_instances = []
+        llm_instance_names = set()
+        
+        for provider_data in llm_providers_data:
+            if isinstance(provider_data, dict):
+                instance_config = ProviderInstanceConfig(
+                    name=provider_data.get('name', ''),
+                    type=provider_data.get('type', ''),
+                    enabled=provider_data.get('enabled', True),
+                    config=provider_data.get('config', {})
+                )
+                
+                # Validate LLM instance configuration
+                validation_errors = self._validate_llm_provider_instance(instance_config, llm_instance_names)
+                if validation_errors:
+                    # Log validation errors but continue loading other instances
+                    for error in validation_errors:
+                        print(f"LLM configuration validation error: {error}")
+                    continue
+                
+                llm_instance_names.add(instance_config.name)
+                llm_provider_instances.append(instance_config)
+        
+        llm_config = LLMConfig(providers=llm_provider_instances)
+        
         # Extract platforms configuration
         platforms_data = merged_config.get('platforms', {})
         
@@ -221,6 +264,7 @@ class ConfigManager:
             author=app_data.get('author', AppConfig.author),
             database=database_config,
             notifications=notification_config,
+            llm=llm_config,
             platforms=platforms_config
         )
     
@@ -381,6 +425,107 @@ class ConfigManager:
             errors.append(f"Telegram instance '{instance_name}' retry_attempts must be a non-negative integer")
         
         return errors
+    
+    def _validate_llm_provider_instance(self, instance: ProviderInstanceConfig, existing_names: set) -> List[str]:
+        """
+        Validate an LLM provider instance configuration.
+        
+        Args:
+            instance: LLM provider instance configuration to validate
+            existing_names: Set of already processed instance names
+            
+        Returns:
+            List of validation error messages (empty if valid)
+        """
+        errors = []
+        
+        # Validate instance name
+        if not instance.name or not instance.name.strip():
+            errors.append("LLM provider instance name cannot be empty")
+        elif instance.name in existing_names:
+            errors.append(f"Duplicate LLM provider instance name: '{instance.name}'")
+        elif not instance.name.replace('_', '').replace('-', '').isalnum():
+            errors.append(f"LLM provider instance name '{instance.name}' contains invalid characters. Use only letters, numbers, hyphens, and underscores")
+        
+        # Validate provider type
+        if not instance.type or not instance.type.strip():
+            errors.append(f"LLM provider instance '{instance.name}' must specify a type")
+        elif instance.type.lower() not in ['llamacpp']:  # Add more types as they're implemented
+            errors.append(f"Unknown LLM provider type '{instance.type}' for instance '{instance.name}'. Supported types: llamacpp")
+        
+        # Validate type-specific configuration
+        if instance.type.lower() == 'llamacpp' and instance.enabled:
+            llamacpp_errors = self._validate_llamacpp_config(instance.name, instance.config)
+            errors.extend(llamacpp_errors)
+        
+        return errors
+    
+    def _validate_llamacpp_config(self, instance_name: str, config: Dict[str, Any]) -> List[str]:
+        """
+        Validate LlamaCpp-specific configuration.
+        
+        Args:
+            instance_name: Name of the instance being validated
+            config: LlamaCpp configuration dictionary
+            
+        Returns:
+            List of validation error messages (empty if valid)
+        """
+        errors = []
+        
+        # Check required fields
+        model_path = config.get('model_path', '')
+        
+        if not model_path or model_path == '/path/to/your/model.gguf' or model_path == '/path/to/code-model.gguf':
+            errors.append(f"LlamaCpp instance '{instance_name}' requires a valid model_path")
+        elif not model_path.lower().endswith('.gguf'):
+            errors.append(f"LlamaCpp instance '{instance_name}' model_path must be a GGUF file (.gguf extension)")
+        
+        # Validate numeric settings
+        context_size = config.get('context_size', 4096)
+        if not isinstance(context_size, int) or context_size <= 0:
+            errors.append(f"LlamaCpp instance '{instance_name}' context_size must be a positive integer")
+        
+        gpu_layers = config.get('gpu_layers', 0)
+        if not isinstance(gpu_layers, int) or gpu_layers < -1:
+            errors.append(f"LlamaCpp instance '{instance_name}' gpu_layers must be -1 or a non-negative integer")
+        
+        # Validate generation config
+        generation_config = config.get('generation_config', {})
+        if isinstance(generation_config, dict):
+            max_tokens = generation_config.get('max_tokens', 8000)
+            if not isinstance(max_tokens, int) or max_tokens <= 0:
+                errors.append(f"LlamaCpp instance '{instance_name}' generation_config.max_tokens must be a positive integer")
+            
+            temperature = generation_config.get('temperature', 0.7)
+            if not isinstance(temperature, (int, float)) or temperature < 0 or temperature > 2:
+                errors.append(f"LlamaCpp instance '{instance_name}' generation_config.temperature must be between 0 and 2")
+        
+        return errors
+    
+    def get_llm_provider_instances(self) -> List[ProviderInstanceConfig]:
+        """
+        Get all LLM provider instances configuration.
+        
+        Returns:
+            List of ProviderInstanceConfig instances for LLM providers
+        """
+        return self.get_config().llm.providers
+    
+    def get_llm_provider_instance(self, name: str) -> Optional[ProviderInstanceConfig]:
+        """
+        Get a specific LLM provider instance by name.
+        
+        Args:
+            name: Name of the LLM provider instance
+            
+        Returns:
+            ProviderInstanceConfig instance or None if not found
+        """
+        for provider in self.get_llm_provider_instances():
+            if provider.name == name:
+                return provider
+        return None
 
 
 # Global configuration manager instance

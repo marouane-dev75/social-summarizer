@@ -8,3 +8,6 @@ requests>=2.31.0
 
 # YouTube transcript scraping
 yt-dlp>=2025.10.22
+
+# LLM support for local models
+llama-cpp-python>=0.2.0

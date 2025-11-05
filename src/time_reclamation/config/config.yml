@@ -89,3 +89,71 @@ notifications:
     #     chat_id: "YOUR_ALERTS_CHAT_ID_HERE"
     #     timeout_seconds: 10
     #     retry_attempts: 1
+
+# LLM configuration
+llm:
+  providers:
+    # Example LlamaCpp instances - you can have multiple instances with different configurations
+    - name: "general_assistant"
+      type: "llamacpp"
+      enabled: false  # Set to true and configure model path to enable
+      config:
+        # Path to your GGUF model file
+        # Download models from Hugging Face (e.g., TheBloke repositories)
+        # Example: wget https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/resolve/main/llama-2-7b-chat.Q4_K_M.gguf
+        model_path: "/path/to/your/model.gguf"
+        
+        # Model configuration
+        context_size: 4096      # Context window size
+        gpu_layers: 33          # Number of layers to offload to GPU (0 = CPU only, -1 = all layers)
+        
+        # Generation parameters
+        generation_config:
+          max_tokens: 8000      # Maximum tokens to generate
+          temperature: 0.7      # Creativity level (0.0 = deterministic, 1.0 = very creative)
+          top_p: 0.9           # Nucleus sampling parameter
+          top_k: 40            # Top-k sampling parameter
+          repeat_penalty: 1.1   # Penalty for repetition
+          stop: ["<|file_separator|>"]  # Stop sequences
+        
+        # Default system prompt for this instance
+        default_system_prompt: "You are a helpful, harmless, and honest AI assistant. You provide clear, accurate, and concise responses to user questions."
+        
+        # Chat template (optional, uses default if not specified)
+        chat_template: |
+          <|system|>
+          {system_prompt}
+          <|user|>
+          {user_prompt}
+          <|assistant|>
+    
+    - name: "code_expert"
+      type: "llamacpp"
+      enabled: false  # Set to true and configure model path to enable
+      config:
+        # Use a code-specialized model for this instance
+        model_path: "/path/to/code-model.gguf"
+        context_size: 8192
+        gpu_layers: 0  # CPU only for this instance
+        generation_config:
+          max_tokens: 4000
+          temperature: 0.3  # Lower temperature for more focused code generation
+          top_p: 0.95
+          top_k: 50
+          repeat_penalty: 1.1
+        default_system_prompt: "You are an expert programmer. Provide clean, efficient, and well-documented code. Explain your solutions clearly."
+    
+    # You can add more instances as needed
+    # - name: "creative_writer"
+    #   type: "llamacpp"
+    #   enabled: true
+    #   config:
+    #     model_path: "/path/to/creative-model.gguf"
+    #     context_size: 4096
+    #     gpu_layers: 20
+    #     generation_config:
+    #       max_tokens: 6000
+    #       temperature: 0.9  # Higher temperature for creativity
+    #       top_p: 0.8
+    #       top_k: 30
+    #     default_system_prompt: "You are a creative writing assistant. Help users craft engaging stories, poems, and creative content."
