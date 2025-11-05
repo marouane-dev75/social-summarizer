@@ -7,6 +7,7 @@ The Time Reclamation App includes a comprehensive LLM (Large Language Model) sys
 The LLM system supports:
 - **Multiple LLM Instances**: Configure different models for different purposes
 - **Local Model Support**: Uses llama-cpp-python for local GGUF models
+- **Cloud API Support**: Integrates with Anthropic Claude and OpenAI GPT models
 - **One-Shot Tasks**: Designed for single prompt-response interactions
 - **Flexible Configuration**: Easy setup through config.yml
 - **CLI Interface**: Simple command-line interface for generating responses
@@ -23,7 +24,9 @@ src/time_reclamation/infrastructure/llm/
 ├── manager.py              # LLM manager for multiple instances
 └── providers/
     ├── __init__.py         # Provider exports
-    └── llamacpp.py         # LlamaCpp provider implementation
+    ├── llamacpp.py         # LlamaCpp provider implementation
+    ├── anthropic.py        # Anthropic Claude provider implementation
+    └── openai.py           # OpenAI GPT provider implementation
 ```
 
 ### Core Components
@@ -31,7 +34,9 @@ src/time_reclamation/infrastructure/llm/
 1. **LLMProvider Interface**: Abstract base class defining the contract for all LLM providers
 2. **LLMManager**: High-level manager handling multiple provider instances
 3. **LlamaCppProvider**: Implementation for local GGUF models using llama-cpp-python
-4. **LLMCommand**: CLI command for interacting with the LLM system
+4. **AnthropicProvider**: Implementation for Anthropic Claude models via API
+5. **OpenAIProvider**: Implementation for OpenAI GPT models via API
+6. **LLMCommand**: CLI command for interacting with the LLM system
 
 ## Configuration
 
@@ -56,6 +61,28 @@ llm:
           top_k: 40
           repeat_penalty: 1.1
         default_system_prompt: "You are a helpful AI assistant."
+
+    # Anthropic Claude Configuration
+    - name: "claude_assistant"
+      type: "anthropic"
+      enabled: true
+      config:
+        api_key: "your-anthropic-api-key-here"
+        model: "claude-haiku-4.5"
+        max_tokens: 4000
+        temperature: 0.7
+        default_system_prompt: "You are Claude, a helpful AI assistant created by Anthropic."
+
+    # OpenAI GPT Configuration
+    - name: "gpt_assistant"
+      type: "openai"
+      enabled: true
+      config:
+        api_key: "your-openai-api-key-here"
+        model: "gpt-5"
+        max_tokens: 4000
+        temperature: 0.7
+        default_system_prompt: "You are a helpful AI assistant."
 ```
 
 ### Configuration Parameters
@@ -73,9 +100,21 @@ llm:
 - `repeat_penalty`: Penalty for repetition
 - `stop`: Stop sequences (optional)
 
+#### Anthropic Configuration Parameters
+- `api_key`: Your Anthropic API key (required)
+- `model`: Claude model to use (e.g., "claude-haiku-4.5", "claude-sonnet-4.5", "claude-opus-4.1")
+- `max_tokens`: Maximum tokens to generate
+- `temperature`: Creativity level (0.0 = deterministic, 1.0 = very creative)
+
+#### OpenAI Configuration Parameters
+- `api_key`: Your OpenAI API key (required)
+- `model`: GPT model to use (e.g., "gpt-5", "o3", "o4-mini")
+- `max_tokens`: Maximum tokens to generate
+- `temperature`: Creativity level (0.0 = deterministic, 2.0 = very creative)
+
 #### System Prompt
 - `default_system_prompt`: Default system prompt for the instance
-- `chat_template`: Custom chat template (optional)
+- `chat_template`: Custom chat template (optional, LlamaCpp only)
 
 ### Multiple Instances Example
 

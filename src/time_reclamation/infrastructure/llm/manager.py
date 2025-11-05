@@ -8,6 +8,8 @@ through various LLM providers with automatic provider selection and fallback.
 from typing import Optional, List, Dict, Any
 from .interface import LLMProvider, LLMResult, LLMStatus
 from .providers.llamacpp import LlamaCppProvider
+from .providers.anthropic import AnthropicProvider
+from .providers.openai import OpenAIProvider
 from src.time_reclamation.config import get_config_manager
 from src.time_reclamation.infrastructure import get_logger
 
@@ -57,19 +59,26 @@ class LLMManager:
                 # Create provider based on type
                 if provider_type == "llamacpp":
                     provider = LlamaCppProvider(instance_name, config_dict)
-                    self._providers[instance_name] = provider
-                    self._provider_instances[instance_name] = {
-                        'type': provider_type,
-                        'name': instance_name,
-                        'configured': provider.is_configured()
-                    }
-                    
-                    if provider.is_configured():
-                        self.logger.info(f"LlamaCpp provider '{instance_name}' initialized and configured")
-                    else:
-                        self.logger.info(f"LlamaCpp provider '{instance_name}' initialized but not configured")
+                elif provider_type == "anthropic":
+                    provider = AnthropicProvider(instance_name, config_dict)
+                elif provider_type == "openai":
+                    provider = OpenAIProvider(instance_name, config_dict)
                 else:
                     self.logger.warning(f"Unknown LLM provider type: {provider_type} for instance: {instance_name}")
+                    continue
+                
+                # Register the provider
+                self._providers[instance_name] = provider
+                self._provider_instances[instance_name] = {
+                    'type': provider_type,
+                    'name': instance_name,
+                    'configured': provider.is_configured()
+                }
+                
+                if provider.is_configured():
+                    self.logger.info(f"{provider_type.title()} provider '{instance_name}' initialized and configured")
+                else:
+                    self.logger.info(f"{provider_type.title()} provider '{instance_name}' initialized but not configured")
                     
         except Exception as e:
             self.logger.error(f"Failed to initialize LLM providers: {str(e)}")

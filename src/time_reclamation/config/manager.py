@@ -450,13 +450,19 @@ class ConfigManager:
         # Validate provider type
         if not instance.type or not instance.type.strip():
             errors.append(f"LLM provider instance '{instance.name}' must specify a type")
-        elif instance.type.lower() not in ['llamacpp']:  # Add more types as they're implemented
-            errors.append(f"Unknown LLM provider type '{instance.type}' for instance '{instance.name}'. Supported types: llamacpp")
+        elif instance.type.lower() not in ['llamacpp', 'anthropic', 'openai']:  # Add more types as they're implemented
+            errors.append(f"Unknown LLM provider type '{instance.type}' for instance '{instance.name}'. Supported types: llamacpp, anthropic, openai")
         
         # Validate type-specific configuration
         if instance.type.lower() == 'llamacpp' and instance.enabled:
             llamacpp_errors = self._validate_llamacpp_config(instance.name, instance.config)
             errors.extend(llamacpp_errors)
+        elif instance.type.lower() == 'anthropic' and instance.enabled:
+            anthropic_errors = self._validate_anthropic_config(instance.name, instance.config)
+            errors.extend(anthropic_errors)
+        elif instance.type.lower() == 'openai' and instance.enabled:
+            openai_errors = self._validate_openai_config(instance.name, instance.config)
+            errors.extend(openai_errors)
         
         return errors
     
@@ -500,6 +506,78 @@ class ConfigManager:
             temperature = generation_config.get('temperature', 0.7)
             if not isinstance(temperature, (int, float)) or temperature < 0 or temperature > 2:
                 errors.append(f"LlamaCpp instance '{instance_name}' generation_config.temperature must be between 0 and 2")
+        
+        return errors
+    
+    def _validate_anthropic_config(self, instance_name: str, config: Dict[str, Any]) -> List[str]:
+        """
+        Validate Anthropic-specific configuration.
+        
+        Args:
+            instance_name: Name of the instance being validated
+            config: Anthropic configuration dictionary
+            
+        Returns:
+            List of validation error messages (empty if valid)
+        """
+        errors = []
+        
+        # Check required fields
+        api_key = config.get('api_key', '')
+        
+        if not api_key or api_key in ['your-anthropic-api-key-here', 'YOUR_ANTHROPIC_API_KEY_HERE']:
+            errors.append(f"Anthropic instance '{instance_name}' requires a valid api_key")
+        elif not api_key.startswith('sk-ant-'):
+            errors.append(f"Anthropic instance '{instance_name}' api_key should start with 'sk-ant-'")
+        
+        # Note: Model name validation removed to allow flexibility for future models
+        # The responsibility for using valid model names is on the person updating the config
+        model = config.get('model', 'claude-haiku-4.5')
+        
+        # Validate numeric settings
+        max_tokens = config.get('max_tokens', 4000)
+        if not isinstance(max_tokens, int) or max_tokens <= 0:
+            errors.append(f"Anthropic instance '{instance_name}' max_tokens must be a positive integer")
+        
+        temperature = config.get('temperature', 0.7)
+        if not isinstance(temperature, (int, float)) or temperature < 0 or temperature > 1:
+            errors.append(f"Anthropic instance '{instance_name}' temperature must be between 0 and 1")
+        
+        return errors
+    
+    def _validate_openai_config(self, instance_name: str, config: Dict[str, Any]) -> List[str]:
+        """
+        Validate OpenAI-specific configuration.
+        
+        Args:
+            instance_name: Name of the instance being validated
+            config: OpenAI configuration dictionary
+            
+        Returns:
+            List of validation error messages (empty if valid)
+        """
+        errors = []
+        
+        # Check required fields
+        api_key = config.get('api_key', '')
+        
+        if not api_key or api_key in ['your-openai-api-key-here', 'YOUR_OPENAI_API_KEY_HERE']:
+            errors.append(f"OpenAI instance '{instance_name}' requires a valid api_key")
+        elif not api_key.startswith('sk-'):
+            errors.append(f"OpenAI instance '{instance_name}' api_key should start with 'sk-'")
+        
+        # Note: Model name validation removed to allow flexibility for future models
+        # The responsibility for using valid model names is on the person updating the config
+        model = config.get('model', 'gpt-5')
+        
+        # Validate numeric settings
+        max_tokens = config.get('max_tokens', 4000)
+        if not isinstance(max_tokens, int) or max_tokens <= 0:
+            errors.append(f"OpenAI instance '{instance_name}' max_tokens must be a positive integer")
+        
+        temperature = config.get('temperature', 0.7)
+        if not isinstance(temperature, (int, float)) or temperature < 0 or temperature > 2:
+            errors.append(f"OpenAI instance '{instance_name}' temperature must be between 0 and 2")
         
         return errors
     

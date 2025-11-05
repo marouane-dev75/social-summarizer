@@ -157,3 +157,78 @@ llm:
     #       top_p: 0.8
     #       top_k: 30
     #     default_system_prompt: "You are a creative writing assistant. Help users craft engaging stories, poems, and creative content."
+    
+    # Example Anthropic Claude instances - you can have multiple instances with different configurations
+    - name: "claude_assistant"
+      type: "anthropic"
+      enabled: false  # Set to true and configure API key to enable
+      config:
+        # Anthropic API Key (get from https://console.anthropic.com/)
+        # How to get your API key:
+        # 1. Go to https://console.anthropic.com/
+        # 2. Sign up or log in to your account
+        # 3. Navigate to API Keys section
+        # 4. Create a new API key
+        # 5. Replace YOUR_ANTHROPIC_API_KEY_HERE with your actual key
+        api_key: "YOUR_ANTHROPIC_API_KEY_HERE"
+        
+        # Model configuration
+        model: "claude-haiku-4-5"  # Latest Claude Haiku 4.5 - fastest small model
+        max_tokens: 4000                     # Maximum tokens to generate
+        temperature: 0.7                     # Creativity level (0.0 = deterministic, 1.0 = very creative)
+        
+        # Default system prompt for this instance
+        default_system_prompt: "You are Claude, a helpful AI assistant created by Anthropic. You provide clear, accurate, and thoughtful responses."
+    
+    - name: "claude_coder"
+      type: "anthropic"
+      enabled: false  # Set to true and configure API key to enable
+      config:
+        api_key: "YOUR_ANTHROPIC_API_KEY_HERE"
+        model: "claude-sonnet-4-5"  # Latest Claude Sonnet 4.5 for coding tasks
+        max_tokens: 4000
+        temperature: 0.3  # Lower temperature for more focused code generation
+        default_system_prompt: "You are Claude, an expert programming assistant. Provide clean, efficient, and well-documented code with clear explanations."
+    
+    # Example OpenAI GPT instances - you can have multiple instances with different configurations
+    - name: "gpt_assistant"
+      type: "openai"
+      enabled: false  # Set to true and configure API key to enable
+      config:
+        # OpenAI API Key (get from https://platform.openai.com/api-keys)
+        # How to get your API key:
+        # 1. Go to https://platform.openai.com/api-keys
+        # 2. Sign up or log in to your account
+        # 3. Click "Create new secret key"
+        # 4. Copy the generated key
+        # 5. Replace YOUR_OPENAI_API_KEY_HERE with your actual key
+        api_key: "YOUR_OPENAI_API_KEY_HERE"
+        
+        # Model configuration
+        model: "gpt-5"          # Latest GPT-5 - smartest and most capable model
+        max_tokens: 4000         # Maximum tokens to generate
+        temperature: 0.7         # Creativity level (0.0 = deterministic, 2.0 = very creative)
+        
+        # Default system prompt for this instance
+        default_system_prompt: "You are a helpful AI assistant. You provide clear, accurate, and concise responses to user questions."
+    
+    - name: "gpt_creative"
+      type: "openai"
+      enabled: false  # Set to true and configure API key to enable
+      config:
+        api_key: "YOUR_OPENAI_API_KEY_HERE"
+        model: "gpt-5"          # GPT-5 is great for creative tasks
+        max_tokens: 6000         # More tokens for longer creative content
+        temperature: 0.9         # Higher temperature for more creativity
+        default_system_prompt: "You are a creative writing assistant. Help users craft engaging stories, poems, and creative content with imagination and flair."
+    
+    # You can add more instances as needed
+    # - name: "gpt_analyzer"
+    #   type: "openai"
+    #   enabled: true
+    #   config:
+    #     api_key: "YOUR_OPENAI_API_KEY_HERE"
+    #     model: "o4-mini"  # More cost-effective reasoning model for analysis tasks
+    #     max_tokens: 2000
+    #     temperature: 0.2      # Low temperature for analytical tasks
+    #     default_system_prompt: "You are an analytical assistant. Provide detailed, objective analysis and insights."
