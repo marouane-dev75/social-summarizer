@@ -232,3 +232,60 @@ llm:
     #     max_tokens: 2000
     #     temperature: 0.2      # Low temperature for analytical tasks
     #     default_system_prompt: "You are an analytical assistant. Provide detailed, objective analysis and insights."
+
+# TTS (Text-to-Speech) configuration
+tts:
+  providers:
+    # Kokoro TTS instances - you can have multiple instances with different configurations
+    - name: "kokoro_english"
+      type: "kokoro"
+      enabled: false  # Set to true to enable
+      config:
+        # Voice selection
+        # Available voices: af_heart, af_alloy, af_bella, af_nicole, af_sarah,
+        #                   am_adam, am_michael, bf_emma, bf_isabella, bm_george, bm_lewis
+        voice: "af_alloy"
+        
+        # Language code
+        # a = American English
+        # b = British English
+        # For other languages, check Kokoro documentation
+        lang_code: "a"
+        
+        # Hugging Face repository
+        repo_id: "hexgrad/Kokoro-82M"
+        
+        # Audio settings
+        sample_rate: 24000
+        
+        # Output directory for generated audio files
+        output_dir: "cache_data/tts"
+    
+    - name: "kokoro_british"
+      type: "kokoro"
+      enabled: false  # Set to true to enable
+      config:
+        voice: "bf_emma"
+        lang_code: "b"  # British English
+        repo_id: "hexgrad/Kokoro-82M"
+        sample_rate: 24000
+        output_dir: "cache_data/tts"
+    
+    # You can add more instances as needed
+    # - name: "kokoro_narrator"
+    #   type: "kokoro"
+    #   enabled: true
+    #   config:
+    #     voice: "am_michael"
+    #     lang_code: "a"
+    #     repo_id: "hexgrad/Kokoro-82M"
+    #     sample_rate: 24000
+    #     output_dir: "cache_data/tts"
+    
+    # Future TTS providers can be added here
+    # - name: "coqui_tts"
+    #   type: "coqui"
+    #   enabled: false
+    #   config:
+    #     model_name: "tts_models/en/ljspeech/tacotron2-DDC"
+    #     output_dir: "cache_data/tts"

@@ -91,6 +91,17 @@ class LLMConfig:
 
 
 @dataclass
+class TTSConfig:
+    """TTS configuration data class."""
+    providers: List[ProviderInstanceConfig] = None
+    
+    def __post_init__(self):
+        """Initialize providers list."""
+        if self.providers is None:
+            self.providers = []
+
+
+@dataclass
 class AppConfig:
     """Application configuration data class."""
     name: str = "Time Reclamation App"
@@ -100,6 +111,7 @@ class AppConfig:
     database: DatabaseConfig = None
     notifications: NotificationConfig = None
     llm: LLMConfig = None
+    tts: TTSConfig = None
     platforms: PlatformsConfig = None
     
     def __post_init__(self):
@@ -110,6 +122,8 @@ class AppConfig:
             self.notifications = NotificationConfig()
         if self.llm is None:
             self.llm = LLMConfig()
+        if self.tts is None:
+            self.tts = TTSConfig()
         if self.platforms is None:
             self.platforms = PlatformsConfig()
 
@@ -235,6 +249,35 @@ class ConfigManager:
         
         llm_config = LLMConfig(providers=llm_provider_instances)
         
+        # Extract TTS configuration
+        tts_data = merged_config.get('tts', {})
+        tts_providers_data = tts_data.get('providers', [])
+        
+        tts_provider_instances = []
+        tts_instance_names = set()
+        
+        for provider_data in tts_providers_data:
+            if isinstance(provider_data, dict):
+                instance_config = ProviderInstanceConfig(
+                    name=provider_data.get('name', ''),
+                    type=provider_data.get('type', ''),
+                    enabled=provider_data.get('enabled', True),
+                    config=provider_data.get('config', {})
+                )
+                
+                # Validate TTS instance configuration
+                validation_errors = self._validate_tts_provider_instance(instance_config, tts_instance_names)
+                if validation_errors:
+                    # Log validation errors but continue loading other instances
+                    for error in validation_errors:
+                        print(f"TTS configuration validation error: {error}")
+                    continue
+                
+                tts_instance_names.add(instance_config.name)
+                tts_provider_instances.append(instance_config)
+        
+        tts_config = TTSConfig(providers=tts_provider_instances)
+        
         # Extract platforms configuration
         platforms_data = merged_config.get('platforms', {})
         
@@ -265,6 +308,7 @@ class ConfigManager:
             database=database_config,
             notifications=notification_config,
             llm=llm_config,
+            tts=tts_config,
             platforms=platforms_config
         )
     
@@ -601,6 +645,98 @@ class ConfigManager:
             ProviderInstanceConfig instance or None if not found
         """
         for provider in self.get_llm_provider_instances():
+            if provider.name == name:
+                return provider
+        return None
+    
+    def _validate_tts_provider_instance(self, instance: ProviderInstanceConfig, existing_names: set) -> List[str]:
+        """
+        Validate a TTS provider instance configuration.
+        
+        Args:
+            instance: TTS provider instance configuration to validate
+            existing_names: Set of already processed instance names
+            
+        Returns:
+            List of validation error messages (empty if valid)
+        """
+        errors = []
+        
+        # Validate instance name
+        if not instance.name or not instance.name.strip():
+            errors.append("TTS provider instance name cannot be empty")
+        elif instance.name in existing_names:
+            errors.append(f"Duplicate TTS provider instance name: '{instance.name}'")
+        elif not instance.name.replace('_', '').replace('-', '').isalnum():
+            errors.append(f"TTS provider instance name '{instance.name}' contains invalid characters. Use only letters, numbers, hyphens, and underscores")
+        
+        # Validate provider type
+        if not instance.type or not instance.type.strip():
+            errors.append(f"TTS provider instance '{instance.name}' must specify a type")
+        elif instance.type.lower() not in ['kokoro']:  # Add more types as they're implemented
+            errors.append(f"Unknown TTS provider type '{instance.type}' for instance '{instance.name}'. Supported types: kokoro")
+        
+        # Validate type-specific configuration
+        if instance.type.lower() == 'kokoro' and instance.enabled:
+            kokoro_errors = self._validate_kokoro_config(instance.name, instance.config)
+            errors.extend(kokoro_errors)
+        
+        return errors
+    
+    def _validate_kokoro_config(self, instance_name: str, config: Dict[str, Any]) -> List[str]:
+        """
+        Validate Kokoro-specific configuration.
+        
+        Args:
+            instance_name: Name of the instance being validated
+            config: Kokoro configuration dictionary
+            
+        Returns:
+            List of validation error messages (empty if valid)
+        """
+        errors = []
+        
+        # Check required fields
+        voice = config.get('voice', '')
+        if not voice:
+            errors.append(f"Kokoro instance '{instance_name}' requires a voice")
+        
+        lang_code = config.get('lang_code', '')
+        if not lang_code:
+            errors.append(f"Kokoro instance '{instance_name}' requires a lang_code")
+        
+        # Validate numeric settings
+        sample_rate = config.get('sample_rate', 24000)
+        if not isinstance(sample_rate, int) or sample_rate <= 0:
+            errors.append(f"Kokoro instance '{instance_name}' sample_rate must be a positive integer")
+        
+        # Validate output directory
+        output_dir = config.get('output_dir', 'cache_data/tts')
+        if not output_dir:
+            errors.append(f"Kokoro instance '{instance_name}' requires an output_dir")
+        
+        return errors
+    
+    def get_tts_provider_instances(self) -> List[ProviderInstanceConfig]:
+        """
+        Get all TTS provider instances configuration.
+        
+        Returns:
+            List of ProviderInstanceConfig instances for TTS providers
+        """
+        return self.get_config().tts.providers
+    
+    def get_tts_provider_instance(self, name: str) -> Optional[ProviderInstanceConfig]:
+        """
+        Get a specific TTS provider instance by name.
+        
+        Args:
+            name: Name of the TTS provider instance
+            
+        Returns:
+            ProviderInstanceConfig instance or None if not found
+        """
+        for provider in self.get_tts_provider_instances():
             if provider.name == name:
                 return provider
         return None
