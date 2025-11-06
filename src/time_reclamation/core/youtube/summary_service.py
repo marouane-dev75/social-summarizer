@@ -295,31 +295,35 @@ Important: Output ONLY the summary text, no meta-commentary or explanations."""
             audio_path = str(tts_result.output_file)
             self.logger.info(f"Audio generated and saved permanently: {audio_path}")
             
-            # Step 4: Send notification with audio
+            # Step 4: Send notification with text and audio
             estimated_minutes = len(summary_text.split()) // 150  # Rough estimate: 150 words per minute
             notification_message = f"""🎥 New Video Summary: {video_title}
 
 Channel: {video.get('channel_name', 'Unknown')}
 Duration: ~{estimated_minutes} minutes
 
-[Audio file attached]"""
+🎧 Audio summary attached below"""
             
-            self.logger.info(f"Sending notification for: {video_title}")
+            self.logger.info(f"Sending notification with audio for: {video_title}")
             
-            # For Telegram, we need to send audio file
-            # Note: The current notification system only supports text messages
-            # We'll send the text message and log that audio needs to be sent separately
             notification_result = self.notification_manager.send_message(
                 message=notification_message,
-                instance_name=notification_provider
+                audio_file=audio_path,
+                instance_name=notification_provider,
+                audio_caption=f"🎧 {video_title}",
+                audio_title=video_title,
+                audio_performer=video.get('channel_name', 'Unknown')
             )
             
             if notification_result.status != NotificationStatus.SUCCESS:
                 error_msg = f"Notification failed: {notification_result.error_details}"
                 self.logger.warning(error_msg)
-                # Don't fail the whole process, just log the warning
+                # Don't fail the whole process if just notification failed
+            elif notification_result.error_details:
+                # Text sent but audio failed
+                self.logger.warning(f"Text sent but audio failed: {notification_result.error_details}")
             else:
-                self.logger.info("Notification sent successfully")
+                self.logger.info("Notification with audio sent successfully")
             
             # Step 5: Mark as processed in database with audio path
             self.database.mark_summary_processed(video_url, summary_text, audio_path)

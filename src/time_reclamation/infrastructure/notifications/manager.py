@@ -95,12 +95,13 @@ class NotificationManager:
         """
         return self._providers.get(instance_name)
     
-    def send_message(self, message: str, instance_name: Optional[str] = None, **kwargs) -> NotificationResult:
+    def send_message(self, message: str, audio_file: Optional[str] = None, instance_name: Optional[str] = None, **kwargs) -> NotificationResult:
         """
-        Send a notification message.
+        Send a notification message, optionally with an audio file.
         
         Args:
             message: The message text to send
+            audio_file: Optional path to audio file to send after message
             instance_name: Specific provider instance to use (optional, will auto-select if not provided)
             **kwargs: Provider-specific parameters
             
@@ -138,12 +139,20 @@ class NotificationManager:
                 error_details=f"Provider instance '{instance_name}' is not properly configured"
             )
         
-        # Send the message
+        # Send the message (with optional audio)
         self.logger.info(f"Sending notification via {provider.provider_name}")
-        result = provider.send_message(message, **kwargs)
+        if audio_file:
+            self.logger.info(f"Audio file will be sent: {audio_file}")
+        
+        result = provider.send_message(message, audio_file=audio_file, **kwargs)
         
         if result.status == NotificationStatus.SUCCESS:
-            self.logger.info(f"Notification sent successfully via {provider.provider_name}")
+            if audio_file and not result.error_details:
+                self.logger.info(f"Notification with audio sent successfully via {provider.provider_name}")
+            elif audio_file and result.error_details:
+                self.logger.warning(f"Notification sent but audio failed via {provider.provider_name}: {result.error_details}")
+            else:
+                self.logger.info(f"Notification sent successfully via {provider.provider_name}")
         else:
             self.logger.error(f"Failed to send notification via {provider.provider_name}: {result.error_details}")
         

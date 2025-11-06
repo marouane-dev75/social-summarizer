@@ -36,16 +36,24 @@ class NotificationProvider(ABC):
     """
     
     @abstractmethod
-    def send_message(self, message: str, **kwargs) -> NotificationResult:
+    def send_message(self, message: str, audio_file: Optional[str] = None, **kwargs) -> NotificationResult:
         """
-        Send a text message.
+        Send a text message, optionally with an audio file attachment.
         
         Args:
             message: The message text to send
+            audio_file: Optional path to audio file to send after the message
             **kwargs: Provider-specific parameters
             
         Returns:
             NotificationResult: Result of the notification attempt
+            
+        Note:
+            When audio_file is provided:
+            - Text message is sent first
+            - Audio file is sent as a separate message immediately after
+            - If text succeeds but audio fails, still returns success
+              (with warning in error_details)
         """
         pass
     
