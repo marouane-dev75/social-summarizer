@@ -9,6 +9,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from .interface import TTSProvider, TTSResult, TTSStatus
 from .providers.kokoro import KokoroProvider
+from .providers.piper import PiperProvider
 from src.time_reclamation.config import get_config_manager
 from src.time_reclamation.infrastructure import get_logger
 
@@ -58,6 +59,8 @@ class TTSManager:
                 # Create provider based on type
                 if provider_type == "kokoro":
                     provider = KokoroProvider(instance_name, config_dict)
+                elif provider_type == "piper":
+                    provider = PiperProvider(instance_name, config_dict)
                 else:
                     self.logger.warning(f"Unknown TTS provider type: {provider_type} for instance: {instance_name}")
                     continue

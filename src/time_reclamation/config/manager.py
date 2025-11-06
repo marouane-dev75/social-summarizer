@@ -673,13 +673,16 @@ class ConfigManager:
         # Validate provider type
         if not instance.type or not instance.type.strip():
             errors.append(f"TTS provider instance '{instance.name}' must specify a type")
-        elif instance.type.lower() not in ['kokoro']:  # Add more types as they're implemented
-            errors.append(f"Unknown TTS provider type '{instance.type}' for instance '{instance.name}'. Supported types: kokoro")
+        elif instance.type.lower() not in ['kokoro', 'piper']:  # Add more types as they're implemented
+            errors.append(f"Unknown TTS provider type '{instance.type}' for instance '{instance.name}'. Supported types: kokoro, piper")
         
         # Validate type-specific configuration
         if instance.type.lower() == 'kokoro' and instance.enabled:
             kokoro_errors = self._validate_kokoro_config(instance.name, instance.config)
             errors.extend(kokoro_errors)
+        elif instance.type.lower() == 'piper' and instance.enabled:
+            piper_errors = self._validate_piper_config(instance.name, instance.config)
+            errors.extend(piper_errors)
         
         return errors
     
@@ -714,6 +717,34 @@ class ConfigManager:
         output_dir = config.get('output_dir', 'cache_data/tts')
         if not output_dir:
             errors.append(f"Kokoro instance '{instance_name}' requires an output_dir")
+        
+        return errors
+    
+    def _validate_piper_config(self, instance_name: str, config: Dict[str, Any]) -> List[str]:
+        """
+        Validate Piper-specific configuration.
+        
+        Args:
+            instance_name: Name of the instance being validated
+            config: Piper configuration dictionary
+            
+        Returns:
+            List of validation error messages (empty if valid)
+        """
+        errors = []
+        
+        # Check required fields
+        model_path = config.get('model_path', '')
+        
+        if not model_path or model_path == '/path/to/your/model.onnx' or model_path == '/path/to/fr_FR-siwis-medium.onnx':
+            errors.append(f"Piper instance '{instance_name}' requires a valid model_path")
+        elif not model_path.lower().endswith('.onnx'):
+            errors.append(f"Piper instance '{instance_name}' model_path must be an ONNX file (.onnx extension)")
+        
+        # Validate output directory
+        output_dir = config.get('output_dir', 'cache_data/tts')
+        if not output_dir:
+            errors.append(f"Piper instance '{instance_name}' requires an output_dir")
         
         return errors
     

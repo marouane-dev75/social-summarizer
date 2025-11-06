@@ -282,10 +282,37 @@ tts:
     #     sample_rate: 24000
     #     output_dir: "cache_data/tts"
     
-    # Future TTS providers can be added here
-    # - name: "coqui_tts"
-    #   type: "coqui"
-    #   enabled: false
+    # Piper TTS instances - you can have multiple instances with different configurations
+    - name: "piper_english"
+      type: "piper"
+      enabled: false  # Set to true and configure model path to enable
+      config:
+        # Path to your Piper ONNX model file
+        # Download models from Hugging Face: https://huggingface.co/rhasspy/piper-voices
+        # Example for English (US):
+        #   wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx
+        #   wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json
+        # Note: You need both the .onnx file and the .onnx.json config file
+        model_path: "/path/to/your/model.onnx"
+        
+        # Output directory for generated audio files
+        output_dir: "cache_data/tts"
+    
+    - name: "piper_french"
+      type: "piper"
+      enabled: false  # Set to true and configure model path to enable
+      config:
+        # Example for French:
+        #   wget https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/siwis/medium/fr_FR-siwis-medium.onnx
+        #   wget https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/siwis/medium/fr_FR-siwis-medium.onnx.json
+        model_path: "/path/to/fr_FR-siwis-medium.onnx"
+        output_dir: "cache_data/tts"
+    
+    # You can add more Piper instances with different voices/languages
+    # - name: "piper_spanish"
+    #   type: "piper"
+    #   enabled: true
     #   config:
-    #     model_name: "tts_models/en/ljspeech/tacotron2-DDC"
+    #     model_path: "/path/to/es_ES-model.onnx"
     #     output_dir: "cache_data/tts"
+    

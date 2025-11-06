@@ -236,10 +236,10 @@ class TTSCommand(BaseCommand):
         self.logger.print_section("EXAMPLES")
         self.logger.print_bullet("python main.py tts --list")
         self.logger.print_bullet("python main.py tts --test")
-        self.logger.print_bullet("python main.py tts --test kokoro_english")
+        self.logger.print_bullet("python main.py tts --test piper_english")
         self.logger.print_bullet("python main.py tts --text 'Hello, world!'")
         self.logger.print_bullet("python main.py tts --text 'Hello, world!' --output greeting.wav")
-        self.logger.print_bullet("python main.py tts kokoro_english --text 'This is a test'")
+        self.logger.print_bullet("python main.py tts piper_english --text 'This is a test'")
         self.logger.print_bullet("python -m time_reclamation speak --text 'Using alias command'")
         
         self.logger.print_section("NOTES")
