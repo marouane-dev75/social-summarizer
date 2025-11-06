@@ -35,7 +35,11 @@ class YouTubeDatabase:
                         language TEXT,
                         source_type TEXT,
                         total_entries INTEGER DEFAULT 0,
-                        llm_processed BOOLEAN DEFAULT FALSE,
+                        summary_processed BOOLEAN DEFAULT FALSE,
+                        summary_text TEXT,
+                        summary_audio_path TEXT,
+                        summary_processed_at TIMESTAMP,
+                        summary_error TEXT,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         fetched_at TEXT
@@ -301,3 +305,162 @@ class YouTubeDatabase:
         except Exception as e:
             self.logger.error(f"Error getting database stats: {str(e)}")
             return {}
+    
+    def get_unsummarized_videos(self, channel_url: Optional[str] = None, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """
+        Get videos that haven't been processed for summaries yet.
+        
+        Args:
+            channel_url: Optional channel URL to filter by
+            limit: Maximum number of videos to return
+            
+        Returns:
+            List of unsummarized video dictionaries
+        """
+        try:
+            with self.db_manager.get_connection() as conn:
+                query = """
+                    SELECT * FROM youtube_videos 
+                    WHERE summary_processed = FALSE AND transcript_path IS NOT NULL
+                """
+                params = []
+                
+                if channel_url:
+                    query += " AND channel_url = ?"
+                    params.append(channel_url)
+                
+                query += " ORDER BY created_at ASC"
+                
+                if limit:
+                    query += " LIMIT ?"
+                    params.append(limit)
+                
+                cursor = conn.execute(query, params)
+                return [dict(row) for row in cursor.fetchall()]
+                
+        except Exception as e:
+            self.logger.error(f"Error getting unsummarized videos: {str(e)}")
+            return []
+    
+    def mark_summary_processed(self, video_url: str, summary_text: str, audio_path: Optional[str] = None) -> bool:
+        """
+        Mark a video as summary processed.
+        
+        Args:
+            video_url: YouTube video URL
+            summary_text: The generated summary text
+            audio_path: Optional path to audio file
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            with self.db_manager.get_connection() as conn:
+                conn.execute(
+                    """UPDATE youtube_videos 
+                       SET summary_processed = ?, summary_text = ?, summary_audio_path = ?,
+                           summary_processed_at = ?, summary_error = NULL, updated_at = ?
+                       WHERE url = ?""",
+                    (True, summary_text, audio_path, 
+                     datetime.now(timezone.utc).isoformat(),
+                     datetime.now(timezone.utc).isoformat(), video_url)
+                )
+                conn.commit()
+                self.logger.debug(f"Marked video as summary processed: {video_url}")
+                return True
+                
+        except Exception as e:
+            self.logger.error(f"Error marking video as summary processed: {str(e)}")
+            return False
+    
+    def mark_summary_error(self, video_url: str, error_message: str) -> bool:
+        """
+        Mark a video summary processing as failed with error.
+        
+        Args:
+            video_url: YouTube video URL
+            error_message: Error message to store
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            with self.db_manager.get_connection() as conn:
+                conn.execute(
+                    """UPDATE youtube_videos 
+                       SET summary_error = ?, updated_at = ?
+                       WHERE url = ?""",
+                    (error_message, datetime.now(timezone.utc).isoformat(), video_url)
+                )
+                conn.commit()
+                self.logger.debug(f"Marked video summary error: {video_url}")
+                return True
+                
+        except Exception as e:
+            self.logger.error(f"Error marking video summary error: {str(e)}")
+            return False
+    
+    def get_summary_stats(self) -> Dict[str, Any]:
+        """
+        Get statistics about summary processing.
+        
+        Returns:
+            Dictionary containing summary statistics
+        """
+        try:
+            with self.db_manager.get_connection() as conn:
+                # Total videos with transcripts
+                cursor = conn.execute("SELECT COUNT(*) FROM youtube_videos WHERE transcript_path IS NOT NULL")
+                total_with_transcripts = cursor.fetchone()[0]
+                
+                # Summary processed videos
+                cursor = conn.execute("SELECT COUNT(*) FROM youtube_videos WHERE summary_processed = TRUE")
+                summary_processed = cursor.fetchone()[0]
+                
+                # Videos with summary errors
+                cursor = conn.execute("SELECT COUNT(*) FROM youtube_videos WHERE summary_error IS NOT NULL")
+                summary_errors = cursor.fetchone()[0]
+                
+                # Pending summaries
+                pending = total_with_transcripts - summary_processed
+                
+                return {
+                    'total_with_transcripts': total_with_transcripts,
+                    'summary_processed': summary_processed,
+                    'pending_summaries': pending,
+                    'summary_errors': summary_errors
+                }
+                
+        except Exception as e:
+            self.logger.error(f"Error getting summary stats: {str(e)}")
+            return {}
+    
+    def get_failed_summaries(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """
+        Get videos that failed summary processing.
+        
+        Args:
+            limit: Maximum number of videos to return
+            
+        Returns:
+            List of failed summary video dictionaries
+        """
+        try:
+            with self.db_manager.get_connection() as conn:
+                query = """
+                    SELECT * FROM youtube_videos 
+                    WHERE summary_error IS NOT NULL AND transcript_path IS NOT NULL
+                    ORDER BY updated_at DESC
+                """
+                params = []
+                
+                if limit:
+                    query += " LIMIT ?"
+                    params.append(limit)
+                
+                cursor = conn.execute(query, params)
+                return [dict(row) for row in cursor.fetchall()]
+                
+        except Exception as e:
+            self.logger.error(f"Error getting failed summaries: {str(e)}")
+            return []

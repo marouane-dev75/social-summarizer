@@ -23,6 +23,20 @@ platforms:
         max_videos: 10
         language: "fr"
         cache_folder: "cache_data/youtube_transcripts/TechWizard9000"
+        
+        # Summary configuration (optional)
+        # Uncomment and configure to enable audio summaries for this channel
+        # summary:
+        #   enabled: true
+        #   llm_provider: "claude_assistant"  # Optional: specific LLM instance (auto-selects if not specified)
+        #   tts_provider: "kokoro_english"    # Optional: specific TTS instance (auto-selects if not specified)
+        #   notification_provider: "personal_bot"  # Optional: specific notification instance (auto-selects if not specified)
+        #   system_prompt: |  # Optional: custom system prompt for summaries
+        #     You are a podcast host creating an engaging audio summary.
+        #     Convert the transcript into a conversational, easy-to-listen format.
+        #     Focus on key insights and make it sound natural for audio playback.
+        #     Keep it concise but informative (3-5 minutes when spoken).
+      
       # Add more channels as needed
       # - name: "Another Channel"
       #   scrap: true

@@ -773,6 +773,50 @@ class ConfigManager:
         return None
 
 
+    def get_channel_summary_config(self, channel_name: str) -> Optional[Dict[str, Any]]:
+        """
+        Get summary configuration for a specific channel.
+        
+        Args:
+            channel_name: Name of the channel
+            
+        Returns:
+            Dictionary with summary configuration or None if not found/disabled
+        """
+        config = self.get_config()
+        
+        for channel_data in config.platforms.youtube.channels:
+            if isinstance(channel_data, dict) and channel_data.get('name') == channel_name:
+                summary_config = channel_data.get('summary', {})
+                if isinstance(summary_config, dict) and summary_config.get('enabled', False):
+                    return summary_config
+                return None
+        
+        return None
+    
+    def get_summary_enabled_channels(self) -> List[Dict[str, Any]]:
+        """
+        Get list of channels with summary enabled.
+        
+        Returns:
+            List of channel configurations with summary enabled
+        """
+        config = self.get_config()
+        enabled_channels = []
+        
+        for channel_data in config.platforms.youtube.channels:
+            if isinstance(channel_data, dict):
+                summary_config = channel_data.get('summary', {})
+                if isinstance(summary_config, dict) and summary_config.get('enabled', False):
+                    enabled_channels.append({
+                        'name': channel_data.get('name'),
+                        'url': channel_data.get('url'),
+                        'summary_config': summary_config
+                    })
+        
+        return enabled_channels
+
+
 # Global configuration manager instance
 _config_manager: Optional[ConfigManager] = None
 

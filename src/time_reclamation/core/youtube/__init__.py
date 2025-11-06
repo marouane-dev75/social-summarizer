@@ -5,6 +5,7 @@ from .transcript_fetcher import YouTubeTranscriptFetcher
 from .channel_manager import YouTubeChannelManager
 from .database import YouTubeDatabase
 from .cache_manager import YouTubeCacheManager
+from .summary_service import SummaryService, get_summary_service
 
 __all__ = [
     'YouTubeService',
@@ -12,5 +13,7 @@ __all__ = [
     'YouTubeTranscriptFetcher',
     'YouTubeChannelManager',
     'YouTubeDatabase',
-    'YouTubeCacheManager'
+    'YouTubeCacheManager',
+    'SummaryService',
+    'get_summary_service'
 ]

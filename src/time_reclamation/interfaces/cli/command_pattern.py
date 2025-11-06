@@ -8,6 +8,7 @@ from .commands.notify_test import NotifyTestCommand
 from .commands.youtube import YouTubeCommand
 from .commands.llm import LLMCommand
 from .commands.tts import TTSCommand
+from .commands.summary import SummaryCommand
 from src.time_reclamation.infrastructure import get_logger
 
 
@@ -31,6 +32,7 @@ class CommandRegistry:
         self.register_command(YouTubeCommand())
         self.register_command(LLMCommand())
         self.register_command(TTSCommand())
+        self.register_command(SummaryCommand())
     
     def register_command(self, command: BaseCommand) -> None:
         """
