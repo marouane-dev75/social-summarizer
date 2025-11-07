@@ -10,6 +10,7 @@ from .interface import LLMProvider, LLMResult, LLMStatus
 from .providers.llamacpp import LlamaCppProvider
 from .providers.anthropic import AnthropicProvider
 from .providers.openai import OpenAIProvider
+from .providers.ollama import OllamaProvider
 from src.time_reclamation.config import get_config_manager
 from src.time_reclamation.infrastructure import get_logger
 
@@ -63,6 +64,8 @@ class LLMManager:
                     provider = AnthropicProvider(instance_name, config_dict)
                 elif provider_type == "openai":
                     provider = OpenAIProvider(instance_name, config_dict)
+                elif provider_type == "ollama":
+                    provider = OllamaProvider(instance_name, config_dict)
                 else:
                     self.logger.warning(f"Unknown LLM provider type: {provider_type} for instance: {instance_name}")
                     continue

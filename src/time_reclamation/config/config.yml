@@ -246,6 +246,77 @@ llm:
     #     max_tokens: 2000
     #     temperature: 0.2      # Low temperature for analytical tasks
     #     default_system_prompt: "You are an analytical assistant. Provide detailed, objective analysis and insights."
+    
+    # Example Ollama instances - you can have multiple instances with different configurations
+    # Ollama runs locally by default at http://localhost:11434
+    # Install Ollama from: https://ollama.ai
+    # Pull models with: ollama pull <model-name>
+    - name: "ollama_local"
+      type: "ollama"
+      enabled: false  # Set to true after installing Ollama and pulling a model
+      config:
+        # Base URL for Ollama server (default: local installation)
+        base_url: "http://localhost:11434"
+        
+        # Model name (any model available in Ollama)
+        # Popular models: llama2, llama3, mistral, codellama, phi, gemma, etc.
+        # Pull a model first with: ollama pull llama2
+        model: "llama2"
+        
+        # Request timeout in seconds
+        timeout_seconds: 120
+        
+        # Generation parameters
+        generation_config:
+          temperature: 0.7      # Creativity level (0.0 = deterministic, 1.0 = very creative)
+          num_predict: 4000     # Maximum tokens to generate (Ollama's equivalent to max_tokens)
+          top_p: 0.9           # Nucleus sampling parameter
+          top_k: 40            # Top-k sampling parameter
+        
+        # Default system prompt for this instance
+        default_system_prompt: "You are a helpful AI assistant. You provide clear, accurate, and concise responses to user questions."
+    
+    - name: "ollama_coder"
+      type: "ollama"
+      enabled: false  # Set to true after installing Ollama and pulling codellama
+      config:
+        base_url: "http://localhost:11434"
+        model: "codellama"  # Specialized model for coding tasks
+        timeout_seconds: 180
+        generation_config:
+          temperature: 0.3  # Lower temperature for more focused code generation
+          num_predict: 4000
+          top_p: 0.95
+          top_k: 50
+        default_system_prompt: "You are an expert programmer. Provide clean, efficient, and well-documented code. Explain your solutions clearly."
+    
+    - name: "ollama_remote"
+      type: "ollama"
+      enabled: false  # Set to true to use a remote Ollama instance
+      config:
+        # Example: Remote Ollama server on another machine
+        base_url: "http://192.168.1.100:11434"
+        model: "mistral"
+        timeout_seconds: 180
+        generation_config:
+          temperature: 0.7
+          num_predict: 4000
+        default_system_prompt: "You are a helpful AI assistant."
+    
+    # You can add more Ollama instances as needed
+    # - name: "ollama_creative"
+    #   type: "ollama"
+    #   enabled: true
+    #   config:
+    #     base_url: "http://localhost:11434"
+    #     model: "llama3"  # Latest Llama 3 model
+    #     timeout_seconds: 120
+    #     generation_config:
+    #       temperature: 0.9  # Higher temperature for creativity
+    #       num_predict: 6000
+    #       top_p: 0.8
+    #       top_k: 30
+    #     default_system_prompt: "You are a creative writing assistant. Help users craft engaging stories, poems, and creative content."
 
 # TTS (Text-to-Speech) configuration
 tts:

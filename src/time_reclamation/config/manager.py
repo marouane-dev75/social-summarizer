@@ -494,8 +494,8 @@ class ConfigManager:
         # Validate provider type
         if not instance.type or not instance.type.strip():
             errors.append(f"LLM provider instance '{instance.name}' must specify a type")
-        elif instance.type.lower() not in ['llamacpp', 'anthropic', 'openai']:  # Add more types as they're implemented
-            errors.append(f"Unknown LLM provider type '{instance.type}' for instance '{instance.name}'. Supported types: llamacpp, anthropic, openai")
+        elif instance.type.lower() not in ['llamacpp', 'anthropic', 'openai', 'ollama']:  # Add more types as they're implemented
+            errors.append(f"Unknown LLM provider type '{instance.type}' for instance '{instance.name}'. Supported types: llamacpp, anthropic, openai, ollama")
         
         # Validate type-specific configuration
         if instance.type.lower() == 'llamacpp' and instance.enabled:
