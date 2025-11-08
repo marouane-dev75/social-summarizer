@@ -340,6 +340,11 @@ tts:
         # Hugging Face repository
         repo_id: "hexgrad/Kokoro-82M"
         
+        # Device configuration
+        # cpu = Run on CPU (slower but works everywhere)
+        # cuda = Run on GPU (faster but requires CUDA-capable GPU)
+        device: "cpu"
+        
         # Audio settings
         sample_rate: 24000
         
@@ -353,6 +358,7 @@ tts:
         voice: "bf_emma"
         lang_code: "b"  # British English
         repo_id: "hexgrad/Kokoro-82M"
+        device: "cpu"  # cpu or cuda
         sample_rate: 24000
         output_dir: "cache_data/tts"
     
@@ -364,6 +370,7 @@ tts:
     #     voice: "am_michael"
     #     lang_code: "a"
     #     repo_id: "hexgrad/Kokoro-82M"
+    #     device: "cpu"  # cpu or cuda
     #     sample_rate: 24000
     #     output_dir: "cache_data/tts"
     

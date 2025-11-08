@@ -39,6 +39,7 @@ class KokoroProvider(TTSProvider):
         self.repo_id = config.get('repo_id', 'hexgrad/Kokoro-82M')
         self.sample_rate = config.get('sample_rate', 24000)
         self.output_dir = config.get('output_dir', 'cache_data/tts')
+        self.device = config.get('device', 'cpu')  # Default to CPU for compatibility
         
         # Pipeline instance (lazy loaded)
         self._pipeline = None
@@ -88,12 +89,13 @@ class KokoroProvider(TTSProvider):
         start_time = time.time()
         
         try:
-            self.logger.info(f"Loading Kokoro pipeline with voice '{self.voice}'...")
+            self.logger.info(f"Loading Kokoro pipeline with voice '{self.voice}' on device '{self.device}'...")
             
             # Initialize the pipeline
             self._pipeline = KPipeline(
                 lang_code=self.lang_code,
-                repo_id=self.repo_id
+                repo_id=self.repo_id,
+                device=self.device
             )
             
             end_time = time.time()

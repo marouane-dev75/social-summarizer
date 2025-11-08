@@ -2,6 +2,7 @@
 
 import os
 import json
+import re
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
@@ -54,6 +55,27 @@ Important: Output ONLY the summary text, no meta-commentary or explanations."""
         self.text_dir.mkdir(parents=True, exist_ok=True)
         
         self.logger.info("Summary service initialized")
+    
+    def _preprocess_text_for_tts(self, text: str) -> str:
+        """
+        Preprocess text before sending to TTS by removing symbols.
+        
+        Args:
+            text: The text to preprocess
+            
+        Returns:
+            Cleaned text suitable for TTS
+        """
+        # Remove markdown symbols like * and #
+        cleaned_text = re.sub(r'[*#]', '', text)
+        
+        # Remove multiple spaces that might result from symbol removal
+        cleaned_text = re.sub(r'\s+', ' ', cleaned_text)
+        
+        # Remove leading/trailing whitespace
+        cleaned_text = cleaned_text.strip()
+        
+        return cleaned_text
     
     def process_channel_summaries(
         self,
@@ -280,9 +302,13 @@ Important: Output ONLY the summary text, no meta-commentary or explanations."""
             # Step 3: Convert summary to audio using TTS
             audio_filename = f"summary_{video_id}_{timestamp}.wav"
             
+            # Preprocess text for TTS (remove symbols like * and #)
+            tts_text = self._preprocess_text_for_tts(summary_text)
+            self.logger.debug(f"Text preprocessed for TTS (removed symbols)")
+            
             self.logger.info(f"Converting summary to audio: {audio_filename}")
             tts_result = self.tts_manager.generate_speech(
-                text=summary_text,
+                text=tts_text,
                 output_filename=audio_filename,
                 instance_name=tts_provider
             )
