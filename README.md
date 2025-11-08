@@ -51,8 +51,8 @@ Reclaim time wasted on social media by getting curated summaries instead of endl
 
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd TimeReclamation
+git clone https://github.com/marouane-dev75/social-summarizer
+cd social-summarizer
 
 # Install dependencies
 pip install -r requirements.txt
